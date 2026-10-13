@@ -1,0 +1,33 @@
+<main class="page">
+  <section class="card">
+    <p class="eyebrow">CHENNAI METROPOLITAN DEVELOPMENT AUTHORITY</p>
+    <h1>Archaeological Sensitive Area Maps</h1>
+    <p class="intro">Select a village to open its official CMDA map in a new tab.</p>
+
+    <form (submit)="openMap($event)">
+      <label for="village">Village</label>
+
+      <select id="village" name="village" required>
+        <option value="" disabled selected>Select a village</option>
+        @for (village of villages; track village) {
+          <option [value]="village">{{ village }}</option>
+        }
+      </select>
+
+      <button type="submit" [disabled]="loading">
+        {{ loading ? 'Finding map...' : 'Open official map' }}
+      </button>
+    </form>
+
+    <p class="status" aria-live="polite">{{ statusMessage }}</p>
+
+    <a
+      class="source-link"
+      href="https://www.cmdachennai.gov.in/ArchaeologicalSensitiveAreaMaps/ASAmaps.aspx"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Visit the CMDA maps page
+    </a>
+  </section>
+</main>
