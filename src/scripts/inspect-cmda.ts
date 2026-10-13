@@ -56,9 +56,27 @@ async function main(): Promise<void> {
       contentDisposition?: string;
     } | null = null;
 
+    const pdfResponses: Array<{
+      url: string;
+      status: number;
+      contentType?: string;
+    }> = [];
+
     page.context().on("response", (response) => {
       if (response.url().includes("ASAMapDisplayer.aspx")) {
         const headers = response.headers();
+        const contentType = headers["content-type"];
+
+        if (
+          /application\/pdf/i.test(contentType ?? "") ||
+          /\.pdf(?:$|[?#])/i.test(response.url())
+        ) {
+          pdfResponses.push({
+            url: response.url(),
+            status: response.status(),
+            contentType,
+          });
+        }
 
         mapResponseInfo = {
           url: response.url(),
@@ -77,6 +95,24 @@ async function main(): Promise<void> {
 
     console.log("Map tab URL:", mapTab.url());
     console.log("Map tab title:", await mapTab.title());
+    const mapPageDetails = await mapTab.evaluate(() => ({
+      bodyText: document.body?.innerText.slice(0, 1500) ?? "",
+      embeddedItems: Array.from(
+        document.querySelectorAll("iframe, embed, object"),
+      ).map((element) => ({
+        tag: element.tagName.toLowerCase(),
+        src: element.getAttribute("src"),
+        data: element.getAttribute("data"),
+        type: element.getAttribute("type"),
+      })),
+      pdfResourceUrls: performance
+        .getEntriesByType("resource")
+        .map((entry) => entry.name)
+        .filter((url) => /\.pdf(?:$|[?#])/i.test(url)),
+    }));
+
+    console.log("Map page details:", JSON.stringify(mapPageDetails, null, 2));
+    console.log("PDF responses:", JSON.stringify(pdfResponses, null, 2));
     console.log("Map response:", mapResponseInfo);
 
     const outputDir = path.join(process.cwd(), "output");
