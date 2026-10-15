@@ -1,36 +1,66 @@
 import { Request, Response } from "express";
 import { findCmdaMap } from "../routes/automation/sources/cmda/cmda.source";
 
-export async function getCmdaMap(req: Request, res: Response): Promise<void> {
-  const village =
-    typeof req.body?.village === "string" ? req.body.village.trim() : "";
+function getSearchTerm(req: Request): string {
+  return [
+    req.query.location,
+    req.query.place,
+    req.query.village,
+    req.body?.location,
+    req.body?.place,
+    req.body?.village,
+  ].find(
+    (value): value is string => typeof value === "string" && value.trim().length > 0,
+  )?.trim() ?? "";
+}
 
-  if (!village) {
+async function lookupCmdaMap(req: Request, res: Response) {
+  const searchTerm = getSearchTerm(req);
+
+  if (!searchTerm) {
     res.status(400).json({
       source: "cmda",
       status: "error",
-      message: "Please provide a village name.",
+      message: "Provide a place or village in the location, place, or village field.",
     });
-    return;
+    return null;
   }
 
   try {
-    const result = await findCmdaMap(village);
-
-    res.status(200).json({
-      source: "cmda",
-      status: "success",
-      ...result,
-    });
+    const result = await findCmdaMap(searchTerm);
+    return result;
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "The CMDA map lookup failed.";
-    const statusCode = message.includes("is not listed") ? 404 : 502;
+    const statusCode = message.includes("is not listed")
+      ? 404
+      : message.includes("matches more than one")
+        ? 400
+        : 502;
 
     res.status(statusCode).json({
       source: "cmda",
       status: "error",
       message,
     });
+    return null;
   }
+}
+
+export async function getCmdaMap(req: Request, res: Response): Promise<void> {
+  const result = await lookupCmdaMap(req, res);
+  if (!result) return;
+
+  res.status(200).json({
+    source: "cmda",
+    status: "success",
+    ...result,
+  });
+}
+
+export async function openCmdaMap(req: Request, res: Response): Promise<void> {
+  const result = await lookupCmdaMap(req, res);
+  if (!result) return;
+
+  res.redirect(302, result.mapUrl);
 }

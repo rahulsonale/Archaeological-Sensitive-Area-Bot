@@ -1,0 +1,33 @@
+<main class="page">
+  <header>
+    <p class="eyebrow">CMDA map lookup</p>
+    <h1>Archaeological Sensitive Area</h1>
+    <p *ngIf="result() as data">Map and zone remarks for {{ data.village }}</p>
+  </header>
+
+  <p class="message" *ngIf="error()">{{ error() }}</p>
+
+  <section class="result" *ngIf="result() as data">
+    <div class="map-heading">
+      <h2>{{ data.village }} map</h2>
+      <a [href]="data.mapImageUrl" download>Download PNG</a>
+    </div>
+
+    <img
+      class="map"
+      [src]="data.mapImageUrl"
+      [alt]="'Map for ' + data.village"
+    />
+
+    <h2>Zone remarks</h2>
+
+    <div class="remarks">
+      <article class="remark" *ngFor="let item of data.remarks">
+        <h3>{{ item.zone }}</h3>
+        <p>{{ item.remark }}</p>
+      </article>
+    </div>
+
+    <p class="note">{{ data.note }}</p>
+  </section>
+</main>

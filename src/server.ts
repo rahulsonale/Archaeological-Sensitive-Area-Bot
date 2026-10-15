@@ -1,11 +1,13 @@
 import express from "express";
 import cors from "cors";
 import { router } from "./routes";
+import path from "node:path";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/output", express.static(path.resolve("output")));
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "archaeological-sensitive-area-bot" });
